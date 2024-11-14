@@ -24,16 +24,16 @@ import {
 import Image from "next/image";
 import { ToggleTheme as ToggleThemeComponent } from "../toggle-theme";
 
-interface RouteProps {
-	href: string;
-	label: string;
-}
-
 const MemoizedRouteList = React.lazy(() =>
 	import("./MemoizedRouteList").then((module) => ({
 		default: module.MemoizedRouteList,
 	})),
 );
+
+interface RouteProps {
+	href: string;
+	label: string;
+}
 
 const CustomNavigationMenu = React.memo(() => {
 	const routeList: RouteProps[] = useMemo(
@@ -103,21 +103,25 @@ export const Navbar = () => {
 	return (
 		<header
 			className={cn(
-				"sticky top-5 right-0 left-0 z-40 mx-auto flex w-[90%] items-center justify-between",
-				"rounded-2xl border border-secondary p-4",
-				"shadow-[0_0px_10px_rgb(0,0,0,0.2)] shadow-primary/30",
-				"border-0 hover:shadow-primary/70",
+				"z-40 mx-auto flex w-full items-center justify-between p-4 py-3",
+				"shadow-primary/30 hover:shadow-[0_0px_5px_rgb(123,112,240,0.3)]",
+				"border-b",
 				"transition-all duration-500 ease-in-out",
-				"md:top-10 md:w-[70%] lg:w-[75%] lg:max-w-screen-xl",
-				"bg-white/50 saturate-150 backdrop-blur backdrop-contrast-125 dark:bg-black/50",
+				"bg-transparent",
 			)}
 		>
 			<Link
 				className="flex items-center gap-4 px-2 font-extrabold text-xl"
 				href="/"
 			>
-				<Image src={"/logo.png"} alt="logo" width={24} height={24} />
-				Faiz Khan
+				<Image
+					alt="logo"
+					width={500}
+					height={500}
+					src="/grape.png"
+					className="h-10 w-8"
+				/>
+				Graph Learn
 			</Link>
 
 			{/* <!-- Mobile --> */}

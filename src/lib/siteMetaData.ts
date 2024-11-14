@@ -1,6 +1,6 @@
 // please update required information
 export const siteMetadata = {
-	title: "Faiz Khan | Portfolio",
+	title: "Graph Learn",
 	author: "Faiz Khan | Portfolio",
 	headerTitle: "Faiz Khan | Portfolio",
 	description:

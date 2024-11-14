@@ -2,6 +2,7 @@
 
 import {
 	type Edge,
+	PanOnScrollMode,
 	Position,
 	ReactFlow,
 	useEdgesState,
@@ -9,6 +10,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 type NodeType = "video" | "webpage" | "text";
 
@@ -33,16 +35,17 @@ const generateNodes = (contents: NodeContent[]) => {
 			data: {
 				label: (
 					<div className="relative h-full w-full">
-						{(content.type === "webpage" || content.type === "video") && (
-							<a
-								href={content.url}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="-top-8 absolute right-0 flex items-center gap-2 text-gray-600 text-sm hover:text-blue-500"
-							>
-								Open {content.title} <ExternalLink size={16} />
-							</a>
-						)}
+						{(content.type === "webpage" || content.type === "video") &&
+							content.url && (
+								<Link
+									href={content.url}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="-top-10 absolute right-0 flex items-center gap-2 text-gray-600 text-lg hover:text-blue-500"
+								>
+									Open {content.title} <ExternalLink size={18} />
+								</Link>
+							)}
 						{renderContent(content)}
 					</div>
 				),
@@ -62,11 +65,11 @@ const generateNodes = (contents: NodeContent[]) => {
 const getNodeDimensions = (type: NodeType) => {
 	switch (type) {
 		case "video":
-			return { width: 560, height: 315 };
+			return { width: 800, height: 500 };
 		case "webpage":
-			return { width: 800, height: 600 };
+			return { width: 900, height: 1000 };
 		case "text":
-			return { width: 300, height: 100 };
+			return { width: 500, height: 300 };
 		default:
 			return { width: 300, height: 200 };
 	}
@@ -106,21 +109,21 @@ export default function GraphComponent() {
 			type: "video",
 			url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
 			title: "Featured Video",
-			position: { x: 200, y: 50 },
+			position: { x: 150, y: 50 },
 		},
 		{
 			type: "webpage",
 			url: "https://nextjs.org/",
 			title: "Next.js Documentation",
 			sourcePosition: Position.Right,
-			position: { x: 100, y: 500 },
+			position: { x: 100, y: 800 },
 		},
 		{
 			type: "text",
 			text: "This is a dynamic text node",
 			title: "Text Note",
 			targetPosition: Position.Left,
-			position: { x: 950, y: 750 },
+			position: { x: 1200, y: 1150 },
 		},
 	];
 
@@ -130,6 +133,7 @@ export default function GraphComponent() {
 			source: "node-1",
 			target: "node-2",
 			type: "default",
+			style: { strokeWidth: 2 },
 		},
 		{
 			id: "e2-3",
@@ -142,10 +146,40 @@ export default function GraphComponent() {
 
 	const [nodes] = useNodesState(generateNodes(sampleContents));
 	const [edges] = useEdgesState(initialEdges);
+	const startX = 100;
+	const startY = -100;
+	const endX = Math.max(
+		...sampleContents.map(
+			(c) => c.position.x + getNodeDimensions(c.type).width,
+		),
+	);
+	const endY =
+		Math.max(
+			...sampleContents.map(
+				(c) => c.position.y + getNodeDimensions(c.type).height,
+			),
+		) + 500;
 
 	return (
-		<div className="h-[70vh] w-full overflow-hidden rounded-xl border shadow-lg">
-			<ReactFlow nodes={nodes} edges={edges} fitView />
+		<div className="h-full w-full">
+			<ReactFlow
+				nodes={nodes}
+				edges={edges}
+				fitView
+				zoomOnScroll={false}
+				panOnDrag={false}
+				panOnScroll={true}
+				panOnScrollMode={PanOnScrollMode.Vertical}
+				maxZoom={1}
+				minZoom={0.5}
+				zoomOnDoubleClick={false}
+				zoomOnPinch={false}
+				nodesDraggable={false}
+				translateExtent={[
+					[startX, startY],
+					[endX, endY],
+				]}
+			/>
 		</div>
 	);
 }
