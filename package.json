@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "biome lint --write",
     "format": "biome format --write",
-    "prepare": "husky"
+    "prepare": "husky",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "preview": "npm run pages:build && wrangler pages dev",
+    "deploy": "npm run pages:build && wrangler pages deploy"
   },
   "husky": {
     "hooks": {
@@ -19,6 +22,7 @@
     "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": "bunx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}"
   },
   "dependencies": {
+    "@cloudflare/next-on-pages": "^1.13.5",
     "@million/lint": "^1.0.0-rc.84",
     "@next/third-parties": "^15.0.3",
     "@radix-ui/react-avatar": "^1.1.0",

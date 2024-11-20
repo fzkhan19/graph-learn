@@ -17,9 +17,9 @@ export const graphData = {
 			title: "Text Note",
 		},
 		{
-			type: "text",
-			text: "This is a dynamic text node",
-			title: "Text Note",
+			type: "webpage",
+			url: "https://nextjs.org/",
+			title: "Next.js Documentation",
 		},
 		{
 			type: "text",

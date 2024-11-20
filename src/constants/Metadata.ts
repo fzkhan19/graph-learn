@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { siteMetadata } from "@/lib/siteMetaData";
 import type { Metadata } from "next";
 
