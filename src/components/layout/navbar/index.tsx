@@ -59,7 +59,7 @@ const CustomNavigationMenu = React.memo(() => {
 	);
 
 	return (
-		<NavigationMenu className="mx-auto hidden lg:block">
+		<NavigationMenu className="mx-auto hidden">
 			<NavigationMenuList>
 				<NavigationMenuItem>
 					<Suspense fallback={<div>Loading...</div>}>
@@ -102,34 +102,14 @@ export const Navbar = () => {
 
 	return (
 		<header
-			className={cn(
-				"z-40 mx-auto flex w-full items-center justify-between p-4 py-3",
-				"shadow-primary/30 hover:shadow-[0_0px_5px_rgb(123,112,240,0.3)]",
-				"border-b",
-				"transition-all duration-500 ease-in-out",
-				"bg-transparent",
-			)}
+			className={cn("absolute z-40 flex w-fit items-center gap-4 p-4 py-3")}
 		>
-			<Link
-				className="flex items-center gap-4 px-2 font-extrabold text-xl"
-				href="/"
-			>
-				<Image
-					alt="logo"
-					width={500}
-					height={500}
-					src="/grape.png"
-					className="h-10 w-8"
-				/>
-				Graph Learn
-			</Link>
-
 			{/* <!-- Mobile --> */}
-			<div className="flex items-center lg:hidden">
+			<div className="flex items-center">
 				<Sheet open={isOpen} onOpenChange={setIsOpen}>
 					<SheetTrigger asChild>
 						<Menu
-							className="cursor-pointer lg:hidden"
+							className="cursor-pointer"
 							onClick={() => setIsOpen(!isOpen)}
 						/>
 					</SheetTrigger>
@@ -141,16 +121,17 @@ export const Navbar = () => {
 							<SheetHeader className="mb-4 ml-4">
 								<SheetTitle className="flex items-center">
 									<Link
-										className="flex items-center gap-3 font-bold text-lg "
+										className="flex items-center gap-4 px-2 font-extrabold text-xl"
 										href="/"
 									>
 										<Image
-											src={"/logo.png"}
 											alt="logo"
-											width={24}
-											height={24}
+											width={500}
+											height={500}
+											src="/grape.png"
+											className="h-10 w-8"
 										/>
-										Faiz Khan
+										Graph Learn
 									</Link>
 								</SheetTitle>
 							</SheetHeader>
@@ -189,10 +170,24 @@ export const Navbar = () => {
 				</Sheet>
 			</div>
 
+			<Link
+				className="flex items-center gap-4 px-2 font-extrabold text-xl"
+				href="/"
+			>
+				<Image
+					alt="logo"
+					width={500}
+					height={500}
+					src="/grape.png"
+					className="h-10 w-8"
+				/>
+				Graph Learn
+			</Link>
+
 			{/* <!-- Desktop --> */}
 			<CustomNavigationMenu />
 
-			<div className="hidden items-center lg:flex">
+			<div className="hidden items-center lg:hidden">
 				<Link className="mx-3" href={"/"}>
 					<Button className="w-full justify-start" size="sm" variant="ghost">
 						<Home className="size-5" />

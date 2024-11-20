@@ -19,19 +19,83 @@ interface NodeContent {
 	url?: string;
 	text?: string;
 	title: string;
-	sourcePosition?: Position;
-	targetPosition?: Position;
-	position: { x: number; y: number };
 }
 
-const generateNodes = (contents: NodeContent[]) => {
+interface Relationship {
+	source: number; // Index of the source node
+	target: number; // Index of the target node
+}
+
+const getNodeDimensions = (type: NodeType) => {
+	switch (type) {
+		case "video":
+			return { width: 800, height: 500 };
+		case "webpage":
+			return { width: 900, height: 1000 };
+		case "text":
+			return { width: 500, height: 300 };
+		default:
+			return { width: 300, height: 200 };
+	}
+};
+
+// Generate node positions based on relationships and dimensions
+const generatePositions = (
+	contents: NodeContent[],
+	relationships: Relationship[],
+	startPosition = { x: 100, y: 100 },
+	padding = 100,
+) => {
+	const positions: { x: number; y: number }[] = [];
+	const placedNodes = new Set<number>();
+
+	// Place the first node at the starting position
+	positions[0] = startPosition;
+	placedNodes.add(0);
+
+	// Recursive function to place child nodes
+	const placeNode = (sourceIndex: number, targetIndex: number) => {
+		if (placedNodes.has(targetIndex)) return; // Avoid placing the same node twice
+
+		const sourcePosition = positions[sourceIndex];
+		const sourceDimensions = getNodeDimensions(contents[sourceIndex].type);
+		const targetDimensions = getNodeDimensions(contents[targetIndex].type);
+
+		// Calculate vertical position based on source node
+		positions[targetIndex] = {
+			x:
+				sourcePosition.x +
+				(sourceDimensions.width - targetDimensions.width) / 2,
+			y: sourcePosition.y + sourceDimensions.height + padding,
+		};
+		placedNodes.add(targetIndex);
+	};
+
+	// Traverse relationships to position nodes
+	for (const { source, target } of relationships) {
+		if (!positions[source]) {
+			throw new Error(`Source node at index ${source} is not placed.`);
+		}
+		placeNode(source, target);
+	}
+
+	return positions;
+};
+// Generate nodes with dimensions and position
+const generateNodes = (
+	contents: NodeContent[],
+	relationships: Relationship[],
+	startPosition = { x: 100, y: 100 },
+) => {
+	const positions = generatePositions(contents, relationships, startPosition);
+
 	return contents.map((content, index) => {
 		const dimensions = getNodeDimensions(content.type);
 		return {
 			id: `node-${index + 1}`,
-			position: content.position,
-			sourcePosition: content?.sourcePosition || Position.Bottom,
-			targetPosition: content?.targetPosition || Position.Top,
+			position: positions[index],
+			sourcePosition: Position.Bottom,
+			targetPosition: Position.Top,
 			data: {
 				label: (
 					<div className="relative h-full w-full">
@@ -62,19 +126,7 @@ const generateNodes = (contents: NodeContent[]) => {
 	});
 };
 
-const getNodeDimensions = (type: NodeType) => {
-	switch (type) {
-		case "video":
-			return { width: 800, height: 500 };
-		case "webpage":
-			return { width: 900, height: 1000 };
-		case "text":
-			return { width: 500, height: 300 };
-		default:
-			return { width: 300, height: 200 };
-	}
-};
-
+// Render the content of the nodes based on their type
 const renderContent = (content: NodeContent) => {
 	switch (content.type) {
 		case "video":
@@ -103,82 +155,85 @@ const renderContent = (content: NodeContent) => {
 	}
 };
 
+// Calculate the translateExtent based on the positions of the nodes and the last node's position
+const calculateTranslateExtent = (
+	positions: { x: number; y: number }[],
+	contents: NodeContent[],
+): [[number, number], [number, number]] => {
+	const startX = Math.min(...positions.map((pos) => pos.x));
+	const startY = Math.min(...positions.map((pos) => pos.y));
+	const endX = Math.max(
+		...positions.map(
+			(pos, index) => pos.x + getNodeDimensions(contents[index].type).width,
+		),
+	);
+	const endY = Math.max(
+		...positions.map(
+			(pos, index) => pos.y + getNodeDimensions(contents[index].type).height,
+		),
+	);
+
+	// Adjust translate extent to fit all nodes without infinite panning
+	return [
+		[startX, startY - 200], // Padding to prevent edge cutoff
+		[endX, endY + 200], // Padding to prevent edge cutoff
+	];
+};
+
 export default function GraphComponent() {
 	const sampleContents: NodeContent[] = [
 		{
 			type: "video",
 			url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
 			title: "Featured Video",
-			position: { x: 150, y: 50 },
 		},
 		{
 			type: "webpage",
 			url: "https://nextjs.org/",
 			title: "Next.js Documentation",
-			sourcePosition: Position.Right,
-			position: { x: 100, y: 800 },
 		},
 		{
 			type: "text",
 			text: "This is a dynamic text node",
 			title: "Text Note",
-			targetPosition: Position.Left,
-			position: { x: 1200, y: 1150 },
 		},
 	];
 
-	const initialEdges: Edge[] = [
-		{
-			id: "e1-2",
-			source: "node-1",
-			target: "node-2",
-			type: "default",
-			style: { strokeWidth: 2 },
-		},
-		{
-			id: "e2-3",
-			source: "node-2",
-			target: "node-3",
-			type: "default",
-			style: { strokeWidth: 2 },
-		},
+	const relationships: Relationship[] = [
+		{ source: 0, target: 1 }, // Node 1 -> Node 2
+		{ source: 1, target: 2 }, // Node 2 -> Node 3
 	];
 
-	const [nodes] = useNodesState(generateNodes(sampleContents));
+	const initialEdges: Edge[] = relationships.map((rel) => ({
+		id: `e${rel.source + 1}-${rel.target + 1}`,
+		source: `node-${rel.source + 1}`,
+		target: `node-${rel.target + 1}`,
+		type: "default",
+		style: { strokeWidth: 2 },
+	}));
+
+	const [nodes] = useNodesState(generateNodes(sampleContents, relationships));
 	const [edges] = useEdgesState(initialEdges);
-	const startX = 100;
-	const startY = -100;
-	const endX = Math.max(
-		...sampleContents.map(
-			(c) => c.position.x + getNodeDimensions(c.type).width,
-		),
-	);
-	const endY =
-		Math.max(
-			...sampleContents.map(
-				(c) => c.position.y + getNodeDimensions(c.type).height,
-			),
-		) + 500;
+
+	// Calculate translate extent based on node positions
+	const positions = generatePositions(sampleContents, relationships);
+	const translateExtent = calculateTranslateExtent(positions, sampleContents);
 
 	return (
 		<div className="h-full w-full">
 			<ReactFlow
 				nodes={nodes}
 				edges={edges}
-				fitView
 				zoomOnScroll={false}
 				panOnDrag={false}
 				panOnScroll={true}
 				panOnScrollMode={PanOnScrollMode.Vertical}
-				maxZoom={1}
+				maxZoom={0.5}
 				minZoom={0.5}
 				zoomOnDoubleClick={false}
 				zoomOnPinch={false}
 				nodesDraggable={false}
-				translateExtent={[
-					[startX, startY],
-					[endX, endY],
-				]}
+				translateExtent={translateExtent}
 			/>
 		</div>
 	);
