@@ -12,6 +12,9 @@ import "@xyflow/react/dist/style.css";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 
+// Import the data from the constant
+import { graphData } from "@/constants/graph-data"; // Adjust path accordingly
+
 type NodeType = "video" | "webpage" | "text";
 
 interface NodeContent {
@@ -45,42 +48,70 @@ const generatePositions = (
 	relationships: Relationship[],
 	startPosition = { x: 100, y: 100 },
 	padding = 100,
+	horizontalSpacing = 100,
 ) => {
 	const positions: { x: number; y: number }[] = [];
 	const placedNodes = new Set<number>();
+	const childrenMap = new Map<number, number[]>();
+
+	// Build a map of parent -> children relationships
+	for (const { source, target } of relationships) {
+		if (!childrenMap.has(source)) {
+			childrenMap.set(source, []);
+		}
+		childrenMap.get(source)?.push(target);
+	}
 
 	// Place the first node at the starting position
 	positions[0] = startPosition;
 	placedNodes.add(0);
 
-	// Recursive function to place child nodes
-	const placeNode = (sourceIndex: number, targetIndex: number) => {
-		if (placedNodes.has(targetIndex)) return; // Avoid placing the same node twice
+	// Place child nodes horizontally
+	const placeChildren = (sourceIndex: number) => {
+		const children = childrenMap.get(sourceIndex) || [];
+		if (children.length === 0) return;
 
 		const sourcePosition = positions[sourceIndex];
 		const sourceDimensions = getNodeDimensions(contents[sourceIndex].type);
-		const targetDimensions = getNodeDimensions(contents[targetIndex].type);
 
-		// Calculate vertical position based on source node
-		positions[targetIndex] = {
-			x:
-				sourcePosition.x +
-				(sourceDimensions.width - targetDimensions.width) / 2,
-			y: sourcePosition.y + sourceDimensions.height + padding,
-		};
-		placedNodes.add(targetIndex);
-	};
+		// Calculate total width of all children
+		const childrenTotalWidth = children.reduce((total, childIndex) => {
+			const childDimensions = getNodeDimensions(contents[childIndex].type);
+			return total + childDimensions.width + horizontalSpacing;
+		}, -horizontalSpacing); // Subtract last spacing
 
-	// Traverse relationships to position nodes
-	for (const { source, target } of relationships) {
-		if (!positions[source]) {
-			throw new Error(`Source node at index ${source} is not placed.`);
+		// Start x position for first child (center aligned)
+		let currentX =
+			sourcePosition.x + (sourceDimensions.width - childrenTotalWidth) / 2;
+
+		for (const childIndex of children) {
+			if (placedNodes.has(childIndex)) continue;
+
+			const childDimensions = getNodeDimensions(contents[childIndex].type);
+			positions[childIndex] = {
+				x: currentX,
+				y: sourcePosition.y + sourceDimensions.height + padding,
+			};
+
+			currentX += childDimensions.width + horizontalSpacing;
+			placedNodes.add(childIndex);
+
+			// Recursively place this child's children
+			placeChildren(childIndex);
 		}
-		placeNode(source, target);
-	}
+	};
+	// Initialize positions and start placement from root
+	contents.forEach((_, index) => {
+		if (positions[index] === undefined) {
+			positions[index] = { x: 0, y: 0 };
+		}
+	});
+
+	placeChildren(0);
 
 	return positions;
 };
+
 // Generate nodes with dimensions and position
 const generateNodes = (
 	contents: NodeContent[],
@@ -93,7 +124,7 @@ const generateNodes = (
 		const dimensions = getNodeDimensions(content.type);
 		return {
 			id: `node-${index + 1}`,
-			position: positions[index],
+			position: positions[index], // Use the generated position
 			sourcePosition: Position.Bottom,
 			targetPosition: Position.Top,
 			data: {
@@ -181,28 +212,7 @@ const calculateTranslateExtent = (
 };
 
 export default function GraphComponent() {
-	const sampleContents: NodeContent[] = [
-		{
-			type: "video",
-			url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-			title: "Featured Video",
-		},
-		{
-			type: "webpage",
-			url: "https://nextjs.org/",
-			title: "Next.js Documentation",
-		},
-		{
-			type: "text",
-			text: "This is a dynamic text node",
-			title: "Text Note",
-		},
-	];
-
-	const relationships: Relationship[] = [
-		{ source: 0, target: 1 }, // Node 1 -> Node 2
-		{ source: 1, target: 2 }, // Node 2 -> Node 3
-	];
+	const { contents, relationships } = graphData;
 
 	const initialEdges: Edge[] = relationships.map((rel) => ({
 		id: `e${rel.source + 1}-${rel.target + 1}`,
@@ -212,12 +222,17 @@ export default function GraphComponent() {
 		style: { strokeWidth: 2 },
 	}));
 
-	const [nodes] = useNodesState(generateNodes(sampleContents, relationships));
+	const [nodes] = useNodesState(
+		generateNodes(contents as NodeContent[], relationships),
+	);
 	const [edges] = useEdgesState(initialEdges);
 
 	// Calculate translate extent based on node positions
-	const positions = generatePositions(sampleContents, relationships);
-	const translateExtent = calculateTranslateExtent(positions, sampleContents);
+	const positions = generatePositions(contents as NodeContent[], relationships);
+	const translateExtent = calculateTranslateExtent(
+		positions,
+		contents as NodeContent[],
+	);
 
 	return (
 		<div className="h-full w-full">
